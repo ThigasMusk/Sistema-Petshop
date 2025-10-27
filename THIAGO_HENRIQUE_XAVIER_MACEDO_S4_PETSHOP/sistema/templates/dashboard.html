@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Bem-vindo, {{ session['user_name'] }}!</h1>
+        <p class="col-md-8 fs-4"></p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-center mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-box-seam fs-2"></i></h5>
+                <h5 class="card-title">Gestão de Produtos</h5>
+                <p class="card-text">Cadastre, edite e controle o estoque dos produtos.</p>
+                <a href="{{ url_for('produtos') }}" class="btn btn-primary">Ir para Produtos</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-people fs-2"></i></h5>
+                <h5 class="card-title">Gestão de Clientes</h5>
+                <p class="card-text">Administre os dados dos clientes fiéis.</p>
+                <a href="{{ url_for('clientes') }}" class="btn btn-primary">Ir para Clientes</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center mb-3 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-cart-check fs-2"></i></h5>
+                <h5 class="card-title">Gestão de Vendas</h5>
+                <p class="card-text">Registre vendas e atualize o estoque.</p>
+                <a href="{{ url_for('vendas') }}" class="btn btn-primary">Ir para Vendas</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

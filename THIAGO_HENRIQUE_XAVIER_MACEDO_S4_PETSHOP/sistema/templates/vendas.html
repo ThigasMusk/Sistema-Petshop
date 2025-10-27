@@ -1,0 +1,96 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-5">
+        <h1>Registrar Venda</h1>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form action="{{ url_for('registrar_venda') }}" method="POST">
+                    
+                    <div class="mb-3">
+                        <label for="id_cliente" class="form-label">1. Cliente</label>
+                        <select class="form-select" id="id_cliente" name="id_cliente" required>
+                            <option value="">Selecione um cliente...</option>
+                            {% for cliente in clientes %}
+                                <option value="{{ cliente.id_cliente }}">{{ cliente.nome_completo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_produto" class="form-label">2. Produto</label>
+                        <select class="form-select" id="id_produto" name="id_produto" required>
+                            <option value="">Selecione um produto...</option>
+                            {% for produto in produtos %}
+                                <option value="{{ produto.id_produto }}" {% if produto.quantidade <= 0 %}disabled{% endif %}>
+                                    {{ produto.nome }} (Estoque: {{ produto.quantidade }})
+                                    {% if produto.quantidade < 5 and produto.quantidade > 0 %} ⚠️ Estoque Baixo {% endif %}
+                                    {% if produto.quantidade <= 0 %} - SEM ESTOQUE {% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="quantidade" class="form-label">3. Quantidade</label>
+                            <input type="number" class="form-control" id="quantidade" name="quantidade" min="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="data_venda" class="form-label">4. Data da Venda</label>
+                            <input type="date" class="form-control" id="data_venda" name="data_venda" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cart-check-fill"></i> Registrar Venda
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <h2>Histórico de Vendas</h2>
+        <div class="card shadow-sm p-3">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Produto</th>
+                        <th>Qtd.</th>
+                        <th>Valor Total</th>
+                        <th>Data</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venda in vendas %}
+                    <tr>
+                        <td>{{ venda.nome_cliente }}</td>
+                        <td>{{ venda.nome_produto }}</td>
+                        <td>{{ venda.quantidade_vendida }}</td>
+                        <td>R$ {{ "%.2f"|format(venda.valor_total) }}</td>
+                        <td>{{ venda.data_obj.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_venda', id=venda.id_venda) }}" method="POST" onsubmit="return confirm('ATENÇÃO: Excluir esta venda NÃO irá repor o estoque. Deseja continuar?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir Venda">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhuma venda registrada ainda.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
