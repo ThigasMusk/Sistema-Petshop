@@ -10,7 +10,6 @@ app.config['SECRET_KEY'] = 'chave-super-secreta-para-o-prazo-1130'
 DATABASE = 'petshop.db'
 EMAIL_REGEX = re.compile(r'[^@]+@[^@]+\.[^@]+')
 
-# --- Gerenciamento do Banco de Dados ---
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -24,7 +23,6 @@ def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None: db.close()
 
-# --- Wrapper para rota protegida ---
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -34,10 +32,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- Algoritmo de Ordenação (Exigência da Reflexão) ---
-# (Resposta para a Pergunta 2a do questionário)
 def insertion_sort(lista_produtos):
-    """Ordena uma lista de dicionários de produtos pelo 'nome' em ordem alfabética."""
     for i in range(1, len(lista_produtos)):
         chave = lista_produtos[i]
         nome_chave = chave['nome'].lower()
@@ -49,7 +44,6 @@ def insertion_sort(lista_produtos):
         lista_produtos[j + 1] = chave
     return lista_produtos
 
-# --- Rotas de Autenticação ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session: return redirect(url_for('dashboard'))
@@ -69,7 +63,6 @@ def logout():
     session.pop('user_id', None); session.pop('user_name', None)
     flash('Você saiu do sistema.', 'info'); return redirect(url_for('login'))
 
-# --- Rotas Principais (Dashboard) ---
 @app.route('/')
 def index():
     if 'user_id' not in session: return redirect(url_for('login'))
@@ -80,7 +73,6 @@ def index():
 def dashboard():
     return render_template('dashboard.html')
 
-# --- ROTAS DE PRODUTOS ---
 @app.route('/produtos')
 @login_required
 def produtos():
@@ -141,7 +133,6 @@ def delete_produto(id):
         flash('Produto excluído com sucesso.', 'success')
     return redirect(url_for('produtos'))
 
-# --- ROTAS DE CLIENTES ---
 @app.route('/clientes')
 @login_required
 def clientes():
@@ -196,25 +187,18 @@ def delete_cliente(id):
         flash('Cliente excluído com sucesso.', 'success')
     return redirect(url_for('clientes'))
 
-# --- ROTAS DE VENDAS (NOVO) ---
-
 @app.route('/vendas')
 @login_required
 def vendas():
     db = get_db()
     
-    # 1. Buscar Clientes
     db_clientes = db.execute('SELECT * FROM Clientes ORDER BY nome_completo').fetchall()
     
-    # 2. Buscar Produtos (incluindo estoque)
     db_produtos = db.execute('SELECT id_produto, nome, preco, quantidade FROM Produtos').fetchall()
-    # Converte para dict para podermos ordenar
     produtos_lista = [dict(row) for row in db_produtos]
     
-    # 3. Ordenar Produtos (RF08)
     produtos_ordenados = insertion_sort(produtos_lista)
     
-    # 4. Buscar Histórico de Vendas
     db_vendas = db.execute('''
         SELECT v.id_venda, c.nome_completo as nome_cliente, p.nome as nome_produto,
                v.quantidade_vendida, v.valor_total, v.data_venda
@@ -235,13 +219,11 @@ def vendas():
                            produtos=produtos_ordenados,
                            vendas=vendas_lista)
 
-# (Resposta para a Pergunta 1a do questionário)
 @app.route('/vendas/registrar', methods=['POST'])
 @login_required
 def registrar_venda():
     db = get_db()
     
-    # 1. Coletar dados do formulário
     id_cliente = int(request.form['id_cliente'])
     id_produto = int(request.form['id_produto'])
     data_venda = request.form['data_venda']
@@ -254,8 +236,6 @@ def registrar_venda():
         flash('Quantidade inválida.', 'danger')
         return redirect(url_for('vendas'))
         
-    # 2. Lógica de Negócio: Buscar produto e verificar estoque (RF09)
-    # (Resposta para a Pergunta 1c do questionário - Passo 1: Leitura)
     produto = db.execute('SELECT * FROM Produtos WHERE id_produto = ?', (id_produto,)).fetchone()
     
     if not produto:
@@ -265,37 +245,27 @@ def registrar_venda():
     estoque_atual = produto['quantidade']
     nome_produto = produto['nome']
     
-    # 3. Validar Estoque (RF09 - Bloquear)
-    # (Resposta para a Pergunta 1c do questionário - Passo 2: Verificação)
     if estoque_atual < quantidade_vendida:
-        # (Resposta para a Pergunta 1b do questionário - Mensagem de erro)
         flash(f'Estoque insuficiente. Restam apenas {estoque_atual} unidades do produto {nome_produto}.', 'danger')
         return redirect(url_for('vendas'))
         
-    # 4. Se tudo OK, efetivar a Venda (RF09 - Efetivar)
-    # (Resposta para a Pergunta 1c do questionário - Passo 3: Escrita)
     try:
-        # Calcular total
         valor_total = produto['preco'] * quantidade_vendida
         
-        # Inserir na tabela de Vendas
         db.execute('''
             INSERT INTO Vendas (id_cliente_fk, id_produto_fk, quantidade_vendida, valor_total, data_venda)
             VALUES (?, ?, ?, ?, ?)
         ''', (id_cliente, id_produto, quantidade_vendida, valor_total, data_venda))
         
-        # Atualizar (abater) o estoque na tabela Produtos
         novo_estoque = estoque_atual - quantidade_vendida
         db.execute('UPDATE Produtos SET quantidade = ? WHERE id_produto = ?', (novo_estoque, id_produto))
         
-        # Confirmar as duas operações (INSERT e UPDATE)
         db.commit()
         
-        # (RF10) Resumo da Venda
         flash(f'Venda registrada! {quantidade_vendida}x {nome_produto} por R$ {valor_total:.2f}. Novo estoque: {novo_estoque} unid.', 'success')
         
     except sqlite3.Error as e:
-        db.rollback() # Desfaz qualquer mudança se algo der errado
+        db.rollback()
         flash(f'Erro ao registrar a venda: {e}', 'danger')
 
     return redirect(url_for('vendas'))
@@ -303,13 +273,11 @@ def registrar_venda():
 @app.route('/vendas/delete/<int:id>', methods=['POST'])
 @login_required
 def delete_venda(id):
-    # Nota: Esta função NÃO repõe o estoque, apenas remove o registro.
     db = get_db()
     db.execute('DELETE FROM Vendas WHERE id_venda = ?', (id,))
     db.commit()
     flash('Registro de venda excluído. O estoque não foi alterado.', 'info')
     return redirect(url_for('vendas'))
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
